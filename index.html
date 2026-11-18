@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Simulación móvil de lactAr</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+<style>
+/* Paleta tomada de quasar.variables.scss de la app lactAr */
+:root{
+  --primary:#d6336c; --pink7:#c2255c; --secondary:#6c5b7b;
+  --positive:#21BA45; --negative:#c92a2a;
+  --page:#f5f5f5; --card:#ffffff; --text:#1d1d1d; --muted:#616161; --line:#e0e0e0;
+  --shadow:0 1px 4px rgba(0,0,0,.18);
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{font-family:Roboto,system-ui,sans-serif;font-size:14px;color:var(--text);background:#e9e4ea}
+.material-icons{font-family:'Material Icons';font-weight:normal;font-style:normal;font-size:24px;line-height:1;display:inline-block;white-space:nowrap;direction:ltr;font-feature-settings:'liga';-webkit-font-smoothing:antialiased;user-select:none;flex:none}
+
+/* Marco del teléfono */
+.stage{min-height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:16px;gap:12px;box-sizing:border-box}
+.phone{width:390px;height:min(844px,calc(100vh - 32px));min-height:520px;background:#fff;border-radius:44px;border:10px solid #1b1b1f;box-shadow:0 20px 50px rgba(0,0,0,.35);display:flex;flex-direction:column;overflow:hidden;position:relative}
+.statusbar{flex:none;height:30px;padding:0 22px;display:flex;align-items:center;justify-content:space-between;font-size:13px;font-weight:500;background:var(--primary);color:#fff}
+.sb-icons{display:flex;gap:4px}
+.sb-icons .material-icons{font-size:16px}
+
+.app{flex:1;min-height:0;position:relative;overflow:hidden;background:var(--page);display:flex;flex-direction:column}
+
+/* Barra superior */
+.appbar{flex:none;height:56px;background:var(--primary);color:#fff;display:flex;align-items:center;gap:8px;padding:0 6px;box-shadow:0 2px 5px rgba(0,0,0,.2)}
+.icon-btn{background:none;border:0;color:inherit;width:40px;height:40px;border-radius:50%;display:grid;place-items:center;cursor:pointer;padding:0}
+.icon-btn:hover{background:rgba(255,255,255,.15)}
+.appbar-title{font-size:20px;font-weight:500;letter-spacing:.2px}
+
+/* Menú lateral */
+.drawer{position:absolute;top:0;bottom:0;left:0;width:270px;max-width:82%;background:#fff;z-index:10;transform:translateX(-105%);transition:transform .22s ease;border-right:1px solid var(--line);overflow-y:auto;padding:8px 0}
+.drawer.open{transform:none;box-shadow:4px 0 16px rgba(0,0,0,.25)}
+.scrim{position:absolute;inset:0;background:rgba(0,0,0,.4);z-index:9;opacity:0;pointer-events:none;transition:opacity .22s}
+.scrim.open{opacity:1;pointer-events:auto}
+.drawer-label{padding:12px 16px 6px;font-size:12px;color:var(--muted);font-weight:500}
+.drawer-item{display:block;width:100%;padding:12px 16px;min-height:44px;border:0;background:none;text-align:left;font:inherit;font-size:14px;color:var(--text);cursor:pointer}
+.drawer-item:hover{background:rgba(0,0,0,.04)}
+.drawer-item.active{background:rgba(214,51,108,.12);color:var(--primary);font-weight:500}
+
+/* Contenido */
+.content{flex:1;min-height:0;overflow-y:auto;padding:16px;-webkit-overflow-scrolling:touch}
+.card{background:var(--card);border-radius:8px;box-shadow:var(--shadow);padding:16px;margin-bottom:16px}
+.h5{font-size:24px;font-weight:400;line-height:1.25;margin:0 0 8px;text-wrap:balance}
+.h6{font-size:20px;font-weight:500;line-height:1.3;margin:0 0 6px}
+.sub{font-size:16px;font-weight:500;margin:0 0 8px}
+.muted{color:var(--muted)}
+.caption{font-size:12px;color:var(--muted)}
+.overline{font-size:12px;letter-spacing:1.5px;text-transform:uppercase;color:var(--muted);margin:8px 2px 10px;font-weight:500}
+p{margin:0 0 10px;line-height:1.5}
+.bold{font-weight:700}
+.pre{white-space:pre-wrap;line-height:1.5}
+.stack{display:flex;flex-direction:column;gap:12px}
+.row-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:12px}
+.empty{padding:20px 16px;color:var(--muted);text-align:center}
+
+/* Botones */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:0;border-radius:4px;background:var(--primary);color:#fff;font:500 14px Roboto,system-ui,sans-serif;padding:10px 16px;cursor:pointer;text-decoration:none;min-height:36px;box-shadow:0 1px 3px rgba(0,0,0,.2);white-space:nowrap}
+.btn.pink{background:var(--pink7)}
+.btn-flat{background:none;color:var(--primary);box-shadow:none;padding:8px 10px}
+.btn-outline{background:none;color:var(--primary);box-shadow:none;border:1px solid var(--primary)}
+.btn .material-icons{font-size:18px}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{outline:2px solid var(--secondary);outline-offset:2px}
+
+/* Listas */
+.list{background:var(--card);border-radius:8px;box-shadow:var(--shadow);overflow:hidden}
+.item{display:block;width:100%;padding:14px 16px;border:0;border-bottom:1px solid var(--line);background:#fff;text-align:left;font:inherit;color:inherit;cursor:pointer}
+button.item:hover{background:#fafafa}
+.item:last-child{border-bottom:0}
+.item-title{font-weight:500;font-size:15px;margin-bottom:4px}
+.item-meta{font-size:12px;color:var(--muted);line-height:1.6}
+.badge{display:inline-block;background:rgba(214,51,108,.12);color:var(--primary);border-radius:10px;padding:0 8px;font-weight:500}
+
+/* Preguntas frecuentes */
+.search{display:flex;align-items:center;gap:8px;border:1px solid #9e9e9e;border-radius:4px;padding:0 12px;background:#fff;margin-bottom:12px}
+.search input{border:0;flex:1;min-width:0;font:inherit;font-size:16px;padding:12px 0;outline:none;background:transparent;color:var(--text)}
+.exp{border-bottom:1px solid var(--line)}
+.exp:last-child{border-bottom:0}
+.exp-head{width:100%;display:flex;align-items:center;gap:12px;padding:14px 16px;background:#fff;border:0;text-align:left;font:inherit;color:inherit;cursor:pointer}
+.exp-main{flex:1;min-width:0}
+.exp-label{display:block;font-weight:500;font-size:15px;line-height:1.35}
+.exp-caption{display:block;font-size:12px;color:var(--muted);margin-top:2px}
+.exp-chev{transition:transform .2s}
+.exp.open .exp-chev{transform:rotate(180deg)}
+.exp-body{display:none;padding:0 16px 16px 52px}
+.exp.open .exp-body{display:block}
+
+/* Redes de apoyo */
+.feature .material-icons{font-size:40px;color:var(--pink7)}
+
+/* Formularios */
+.field{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.field label{font-size:12px;color:var(--muted)}
+.field:focus-within label{color:var(--primary)}
+.field input,.field textarea,.field select{font:inherit;font-size:16px;border:1px solid #9e9e9e;border-radius:4px;padding:12px;background:#fff;color:var(--text);width:100%}
+.field textarea{min-height:96px;resize:vertical}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--primary);outline:none;box-shadow:0 0 0 1px var(--primary)}
+.field.invalid input,.field.invalid textarea{border-color:var(--negative)}
+.err{color:var(--negative);font-size:12px;min-height:14px}
+
+/* Diálogo */
+.scrim-dialog{position:absolute;inset:0;background:rgba(0,0,0,.45);z-index:20;display:none;align-items:center;justify-content:center;padding:16px}
+.scrim-dialog.open{display:flex}
+.dialog{background:#fff;border-radius:8px;width:100%;max-width:340px;box-shadow:0 10px 30px rgba(0,0,0,.3);padding:16px;margin:0}
+.dialog-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:8px}
+
+/* Notificación */
+.toast{position:absolute;left:16px;right:16px;bottom:20px;z-index:30;background:#323232;color:#fff;border-radius:4px;padding:12px 16px;opacity:0;transform:translateY(10px);transition:opacity .2s,transform .2s;pointer-events:none;box-shadow:0 4px 10px rgba(0,0,0,.3)}
+.toast.show{opacity:1;transform:none}
+.toast.positive{background:var(--positive)}
+
+/* Teléfono real: ocupa toda la pantalla */
+@media (max-width:500px){
+  .stage{padding:0;gap:0;background:#fff}
+  .phone{width:100vw;height:100vh;height:100dvh;min-height:0;border:none;border-radius:0;box-shadow:none}
+  .statusbar{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div class="stage">
+  <div class="phone" role="application" aria-label="Simulación de la app lactAr">
+    <div class="statusbar">
+      <span>9:41</span>
+      <span class="sb-icons"><span class="material-icons">signal_cellular_alt</span><span class="material-icons">wifi</span><span class="material-icons">battery_full</span></span>
+    </div>
+    <div class="app">
+      <header class="appbar">
+        <button class="icon-btn" id="menuBtn" aria-label="Menú"><span class="material-icons">menu</span></button>
+        <div class="appbar-title">lactAr</div>
+      </header>
+
+      <nav class="drawer" id="drawer" aria-label="Navegación">
+        <div class="drawer-label">Navegación</div>
+        <button class="drawer-item" data-go="/">Inicio</button>
+        <div class="drawer-label">Módulos</div>
+        <button class="drawer-item" data-go="/redes_apoyo">Redes de Apoyo</button>
+        <button class="drawer-item" data-go="/foro">Foro</button>
+        <button class="drawer-item" data-go="/info">Info</button>
+      </nav>
+      <div class="scrim" id="scrim"></div>
+
+      <main class="content" id="content"></main>
+      <div class="scrim-dialog" id="dialog"></div>
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const PREGUNTAS = [
+  {id:1, pregunta:"¿Cuál es la mejor postura para amamantar?", respuesta:"No existe una única postura ideal para todas las personas. Una opción que puede facilitar la lactancia, especialmente al comienzo, es amamantar en posición recostada, con el bebé boca abajo sobre el cuerpo de quien amamanta. Esta posición aprovecha la gravedad, favorece el agarre al pecho y puede ayudar a reducir las molestias.", link:"https://llli.org/news/posturas-para-amamantar/", fuente:"La Liga Internacional de la Leche", categoria:"Primeras Semanas"},
+  {id:2, pregunta:"¿Cómo saber si el bebé tiene un agarre correcto al pecho?", respuesta:"Un buen agarre se caracteriza por una boca bien abierta, los labios hacia afuera y el mentón apoyado en el pecho. El bebé debe tomar parte de la areola, no solamente el pezón. La succión debe permitir que trague leche de manera efectiva y no provocar dolor persistente en quien amamanta.", link:"https://ligadelaleche.org.ar/wp-content/uploads/2023/11/agarre2.png", fuente:"Liga de La Leche Argentina", categoria:"Primeras Semanas"},
+  {id:3, pregunta:"¿Ofrezco un pecho o dos? ¿Cuánto dura una toma al pecho?", respuesta:"Se recomienda permitir que el bebé tome del primer pecho hasta que se suelte por sí mismo y luego ofrecer el segundo, que puede aceptar o rechazar. No existe una duración fija para cada toma: cada bebé tiene su propio ritmo. Lo importante es observar sus señales de hambre y saciedad y favorecer una lactancia a demanda.", link:"https://ligadelaleche.org.ar/un-pecho-o-doscuanto-dura-una-toma-al-pecho/", fuente:"Liga de La Leche Argentina", categoria:"Primeras Semanas"},
+  {id:4, pregunta:"¿Qué es el calostro y por qué es importante?", respuesta:"El calostro es la primera leche que produce el cuerpo, desde el embarazo hasta los primeros días después del nacimiento. Aunque se produce en pequeñas cantidades, contiene nutrientes y componentes que ayudan a proteger al bebé de infecciones, fortalecer sus defensas y favorecer el desarrollo de su sistema digestivo.", link:"https://llli.org/es/breastfeeding-info/colostrum-general/", fuente:"La Liga Internacional de la Leche", categoria:"Primeras Semanas"},
+  {id:5, pregunta:"¿Qué puedo hacer si siento que produzco poca leche?", respuesta:"Sentir los pechos más blandos o notar que el bebé pide mamar más seguido no significa necesariamente que produzcas poca leche. La producción depende principalmente de la frecuencia y eficacia de la succión. Ofrecer el pecho a demanda y revisar el agarre puede ayudar. Si hay dudas sobre el aumento de peso o la cantidad de leche que recibe el bebé, es importante consultar con un profesional de salud.", link:"https://ligadelaleche.org.ar/cuando-crees-que-bajo-la-produccion-de-leche/", fuente:"Liga de La Leche Argentina", categoria:"Primeras Semanas"},
+  {id:6, pregunta:"¿Es normal sentir dolor al amamantar?", respuesta:"Amamantar no debería causar dolor persistente. Una ligera sensibilidad al comienzo puede ocurrir, pero si el dolor continúa, es importante identificar su causa. Puede deberse a una postura inadecuada, un agarre poco profundo, grietas u otras dificultades. Buscar acompañamiento profesional puede ayudar a mejorar la situación.", link:"https://ligadelaleche.org.ar/amamantar-no-deberia-doler/", fuente:"Liga de La Leche Argentina", categoria:"Dificultades Frecuentes"},
+  {id:7, pregunta:"¿Qué es la mastitis y cómo reconocerla?", respuesta:"La mastitis es una inflamación del tejido mamario que puede presentarse durante la lactancia y, en algunos casos, acompañarse de una infección. Puede causar dolor, hinchazón, zonas endurecidas, cambios de color en la piel, fiebre y malestar general. Si los síntomas empeoran, aparece fiebre alta o no mejoran en 24 a 48 horas, es importante consultar con un profesional de salud.", link:"https://llli.org/es/breastfeeding-info/mastitis/", fuente:"La Liga Internacional de la Leche", categoria:"Dificultades Frecuentes"}
+];
+
+const CATEGORIAS = ['Todas', ...new Set(PREGUNTAS.map(p => p.categoria))];
+const MODULOS = [
+  {nombre:'Redes de Apoyo', descripcion:'Grupos de apoyo presenciales y virtuales', boton:'Ir a Redes de Apoyo', ruta:'/redes_apoyo'},
+  {nombre:'Foro', descripcion:'Espacio de dialogo entre usuarias', boton:'Ir al foro', ruta:'/foro'},
+  {nombre:'Información', descripcion:'Preguntas frecuencias sobre lactancia', boton:'Ir a info', ruta:'/info'}
+];
+const LIGA = 'https://ligadelaleche.org.ar/grupos-de-apoyo/';
+
+// Estado del foro en memoria: igual que la app, se pierde al recargar.
+const TEMAS = [];
+
+const S = {
+  ruta:'/', temaId:null, drawer:false,
+  busqueda:'', categoria:'Todas', abiertas:{},
+  dialog:false, errs:{},
+  tema:{autor:'', titulo:'', mensaje:''},
+  resp:{autor:'', texto:''},
+  toastTimer:null
+};
+
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt = d => d.toLocaleString('es-AR', {day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit'});
+const ultima = t => t.respuestas.length ? t.respuestas[t.respuestas.length - 1].fecha : t.fecha;
+
+/* ---------- Vistas ---------- */
+
+function vistaInicio(){
+  return `
+    <div class="card">
+      <div class="h5">Bienvenida a LactAr!</div>
+      <div class="muted">
+        <p>Un espacio pensado para acompañarte en tu camino de lactancia. Acá vas a encontrar respuestas a preguntas frecuentes, información confiable, grupos de apoyo y, sobre todo, una red de contención para transitar esta etapa tan especial y movilizante.</p>
+        <p class="bold" style="color:var(--text)">Porque amamantar no siempre es fácil, y no tenés por qué hacerlo sola.</p>
+      </div>
+    </div>
+    <div class="overline">Módulos</div>
+    <div class="stack">
+      ${MODULOS.map(m => `
+        <div class="card" style="margin:0">
+          <div class="h6" style="font-size:18px">${esc(m.nombre)}</div>
+          <div class="caption" style="margin-bottom:12px">${esc(m.descripcion)}</div>
+          <button class="btn" data-go="${m.ruta}">${esc(m.boton)}</button>
+        </div>`).join('')}
+    </div>`;
+}
+
+function vistaRedes(){
+  const tarjetas = [
+    {icono:'place', titulo:'Grupos presenciales', texto:'Compartí experiencias y dudas en encuentros con otras personas que están transitando la lactancia.', boton:'Ver encuentros'},
+    {icono:'videocam', titulo:'Grupos virtuales', texto:'Participá de encuentros de apoyo desde donde estés, consultando fechas y condiciones de inscripción.', boton:'Ver encuentros'},
+    {icono:'chat', titulo:'Teléfono y WhatsApp', texto:'Encontrá canales de contacto con voluntarias de apoyo a la lactancia para compartir tus inquietudes.', boton:'Consultar contactos'}
+  ];
+  return `
+    <div class="card">
+      <div class="h5">Redes de Apoyo</div>
+      <div class="sub">¿Qué es un grupo de apoyo a la lactancia?</div>
+      <p class="muted">Es un espacio de encuentro, escucha e intercambio donde las personas pueden compartir experiencias, expresar inquietudes y recibir orientación sobre lactancia.</p>
+      <p class="muted">No necesitás estar atravesando una dificultad para participar. También podés acercarte para aprender, compartir tu experiencia o sentirte acompañada.</p>
+      <p class="muted">Los grupos de apoyo no reemplazan la atención médica profesional cuando es necesaria.</p>
+      <p class="bold">Encontrá la forma de acompañamiento que mejor se adapte a vos.</p>
+    </div>
+    <div class="stack">
+      ${tarjetas.map(t => `
+        <div class="card feature" style="margin:0">
+          <span class="material-icons">${t.icono}</span>
+          <div class="h6" style="font-size:18px;margin:0">${t.titulo}</div>
+          <p class="muted" style="font-size:13px;margin:0">${t.texto}</p>
+          <div><a class="btn pink" href="${LIGA}" target="_blank" rel="noopener noreferrer">${t.boton}</a></div>
+        </div>`).join('')}
+    </div>
+    <p class="caption" style="margin-top:12px;line-height:1.5">Información proporcionada por la Liga de La Leche Argentina. Los encuentros y contactos pueden cambiar.</p>`;
+}
+
+function vistaForo(){
+  if (S.temaId !== null) return vistaTema();
+  const lista = TEMAS.length
+    ? `<div class="list">${TEMAS.map(t => `
+        <button class="item" data-tema="${t.id}">
+          <div class="item-title">${esc(t.titulo)}</div>
+          <div class="item-meta">${esc(t.autor)} · <span class="badge">Respuestas: ${t.respuestas.length}</span></div>
+          <div class="item-meta">Última actividad: ${fmt(ultima(t))}</div>
+        </button>`).join('')}</div>`
+    : `<div class="list"><div class="empty">Todavía no hay temas. Creá el primero.</div></div>`;
+  return `
+    <div class="row-head">
+      <div class="sub" style="margin:0">Temas</div>
+      <button class="btn" data-nuevo>Nuevo tema</button>
+    </div>
+    ${lista}`;
+}
+
+function vistaTema(){
+  const t = TEMAS.find(x => x.id === S.temaId);
+  if (!t) { S.temaId = null; return vistaForo(); }
+  const respuestas = t.respuestas.length
+    ? `<div class="list">${t.respuestas.map(r => `
+        <div class="item" style="cursor:default">
+          <div class="item-meta">${esc(r.autor)} · ${fmt(r.fecha)}</div>
+          <div class="pre" style="margin-top:4px">${esc(r.texto)}</div>
+        </div>`).join('')}</div>`
+    : `<div class="card empty">Todavía no hay respuestas.</div>`;
+  return `
+    <button class="btn btn-flat" data-volver style="padding-left:0;margin-bottom:8px"><span class="material-icons">arrow_back</span>Volver al foro</button>
+    <div class="card">
+      <div class="h5" style="font-size:20px">${esc(t.titulo)}</div>
+      <div class="caption" style="margin-bottom:10px">Por ${esc(t.autor)} · ${fmt(t.fecha)}</div>
+      <div class="pre">${esc(t.mensaje)}</div>
+    </div>
+    <div class="sub">Respuestas</div>
+    ${respuestas}
+    <div class="card" style="margin-top:16px">
+      <div class="sub">Responder</div>
+      <form data-form="resp" novalidate>
+        ${campo('resp', 'autor', 'Tu nombre')}
+        ${campo('resp', 'texto', 'Respuesta', 'textarea')}
+        <button class="btn" type="submit">Responder</button>
+      </form>
+    </div>`;
+}
+
+function vistaInfo(){
+  return `
+    <div class="h5">Información sobre lactancia</div>
+    <p class="muted">Encontrá respuestas a preguntas frecuentes y consultá las fuentes originales para conocer más.</p>
+    <label class="search">
+      <span class="material-icons muted">search</span>
+      <input id="busqueda" type="search" placeholder="Buscar una pregunta" value="${esc(S.busqueda)}" autocomplete="off">
+    </label>
+    <div class="field">
+      <label for="categoria">Categoría</label>
+      <select id="categoria">
+        ${CATEGORIAS.map(c => `<option ${c === S.categoria ? 'selected' : ''}>${esc(c)}</option>`).join('')}
+      </select>
+    </div>
+    <div id="lista" style="margin-top:12px"></div>`;
+}
+
+function renderLista(){
+  const q = S.busqueda.toLowerCase();
+  const items = PREGUNTAS.filter(p =>
+    (S.categoria === 'Todas' || p.categoria === S.categoria) &&
+    p.pregunta.toLowerCase().includes(q)
+  );
+  $('#lista').innerHTML = items.length
+    ? `<div class="list">${items.map(p => {
+        const abierta = !!S.abiertas[p.id];
+        return `
+          <div class="exp ${abierta ? 'open' : ''}">
+            <button class="exp-head" data-exp="${p.id}" aria-expanded="${abierta}">
+              <span class="material-icons muted">help_outline</span>
+              <span class="exp-main">
+                <span class="exp-label">${esc(p.pregunta)}</span>
+                <span class="exp-caption">${esc(p.categoria)}</span>
+              </span>
+              <span class="material-icons exp-chev muted">expand_more</span>
+            </button>
+            <div class="exp-body">
+              <p>${esc(p.respuesta)}</p>
+              <div class="caption" style="margin-bottom:10px">Fuente: ${esc(p.fuente)}</div>
+              <a class="btn btn-outline" href="${esc(p.link)}" target="_blank" rel="noopener noreferrer">Leer más en la fuente original <span class="material-icons">open_in_new</span></a>
+            </div>
+          </div>`;
+      }).join('')}</div>`
+    : `<p class="empty">No encontramos preguntas con esos filtros.</p>`;
+}
+
+/* ---------- Formularios ---------- */
+
+function campo(obj, key, label, tipo = 'input'){
+  const k = obj + '.' + key;
+  const err = S.errs[k] || '';
+  const val = S[obj][key];
+  const control = tipo === 'textarea'
+    ? `<textarea id="${obj}-${key}" data-model="${k}">${esc(val)}</textarea>`
+    : `<input id="${obj}-${key}" data-model="${k}" value="${esc(val)}" autocomplete="off">`;
+  return `
+    <div class="field ${err ? 'invalid' : ''}">
+      <label for="${obj}-${key}">${label}</label>
+      ${control}
+      <div class="err">${esc(err)}</div>
+    </div>`;
+}
+
+function renderDialog(){
+  const el = $('#dialog');
+  el.classList.toggle('open', S.dialog);
+  if (!S.dialog) { el.innerHTML = ''; return; }
+  el.innerHTML = `
+    <form class="dialog" data-form="tema" novalidate>
+      <div class="h6" style="margin-bottom:12px">Nuevo tema</div>
+      ${campo('tema', 'autor', 'Tu nombre')}
+      ${campo('tema', 'titulo', 'Título')}
+      ${campo('tema', 'mensaje', 'Mensaje', 'textarea')}
+      <div class="dialog-actions">
+        <button type="button" class="btn btn-flat" data-cerrar>Cancelar</button>
+        <button class="btn" type="submit">Publicar tema</button>
+      </div>
+    </form>`;
+}
+
+function validar(obj, reglas){
+  S.errs = {};
+  for (const [key, msg] of reglas) {
+    if (!S[obj][key].trim()) S.errs[obj + '.' + key] = msg;
+  }
+  return Object.keys(S.errs).length === 0;
+}
+
+function enviarTema(){
+  const ok = validar('tema', [
+    ['autor', 'El nombre es obligatorio'],
+    ['titulo', 'El título es obligatorio'],
+    ['mensaje', 'El mensaje es obligatorio']
+  ]);
+  if (!ok) return renderDialog();
+  TEMAS.unshift({
+    id: Date.now(),
+    autor: S.tema.autor.trim(),
+    titulo: S.tema.titulo.trim(),
+    mensaje: S.tema.mensaje.trim(),
+    fecha: new Date(),
+    respuestas: []
+  });
+  S.tema = {autor:'', titulo:'', mensaje:''};
+  S.dialog = false;
+  S.errs = {};
+  render();
+  toast('Tema publicado', true);
+}
+
+function enviarResp(){
+  const ok = validar('resp', [
+    ['autor', 'El nombre es obligatorio'],
+    ['texto', 'La respuesta es obligatoria']
+  ]);
+  if (!ok) return render();
+  const t = TEMAS.find(x => x.id === S.temaId);
+  if (t) t.respuestas.push({autor: S.resp.autor.trim(), texto: S.resp.texto.trim(), fecha: new Date()});
+  S.resp = {autor:'', texto:''};
+  S.errs = {};
+  render();
+}
+
+/* ---------- Navegación y render ---------- */
+
+function syncChrome(){
+  $('#drawer').classList.toggle('open', S.drawer);
+  $('#scrim').classList.toggle('open', S.drawer);
+  document.querySelectorAll('#drawer [data-go]').forEach(b =>
+    b.classList.toggle('active', b.dataset.go === S.ruta));
+}
+
+function render(){
+  const vistas = {'/': vistaInicio, '/redes_apoyo': vistaRedes, '/foro': vistaForo, '/info': vistaInfo};
+  $('#content').innerHTML = (vistas[S.ruta] || vistaInicio)();
+  if (S.ruta === '/info') renderLista();
+  syncChrome();
+  renderDialog();
+}
+
+function ir(ruta){
+  S.ruta = ruta;
+  S.temaId = null;
+  S.drawer = false;
+  render();
+  $('#content').scrollTop = 0;
+}
+
+function setDrawer(v){
+  S.drawer = v;
+  syncChrome();
+}
+
+function abrirNuevoTema(){
+  S.dialog = true;
+  S.errs = {};
+  renderDialog();
+  const f = $('#dialog input');
+  if (f) f.focus();
+}
+
+function toast(msg, positivo){
+  const el = $('#toast');
+  el.textContent = msg;
+  el.classList.toggle('positive', !!positivo);
+  el.classList.add('show');
+  clearTimeout(S.toastTimer);
+  S.toastTimer = setTimeout(() => el.classList.remove('show'), 2200);
+}
+
+/* ---------- Eventos (delegados) ---------- */
+
+document.addEventListener('click', e => {
+  if (e.target.closest('#menuBtn')) return setDrawer(!S.drawer);
+  if (e.target.id === 'scrim') return setDrawer(false);
+
+  const c = e.target.closest('button, a');
+  if (!c) return;
+  if (c.dataset.go !== undefined) return ir(c.dataset.go);
+  if (c.dataset.tema !== undefined) { S.temaId = Number(c.dataset.tema); return render(); }
+  if (c.dataset.volver !== undefined) { S.temaId = null; return render(); }
+  if (c.dataset.nuevo !== undefined) return abrirNuevoTema();
+  if (c.dataset.cerrar !== undefined) { S.dialog = false; return renderDialog(); }
+  if (c.dataset.exp !== undefined) {
+    const id = Number(c.dataset.exp);
+    S.abiertas[id] = !S.abiertas[id];
+    const exp = c.closest('.exp');
+    exp.classList.toggle('open', S.abiertas[id]);
+    c.setAttribute('aria-expanded', String(S.abiertas[id]));
+  }
+});
+
+document.addEventListener('input', e => {
+  if (e.target.id === 'busqueda') { S.busqueda = e.target.value; return renderLista(); }
+  const k = e.target.dataset.model;
+  if (!k) return;
+  const [obj, key] = k.split('.');
+  S[obj][key] = e.target.value;
+  if (S.errs[k]) {
+    delete S.errs[k];
+    const field = e.target.closest('.field');
+    field.classList.remove('invalid');
+    field.querySelector('.err').textContent = '';
+  }
+});
+
+document.addEventListener('change', e => {
+  if (e.target.id === 'categoria') { S.categoria = e.target.value; renderLista(); }
+});
+
+document.addEventListener('submit', e => {
+  e.preventDefault();
+  const f = e.target.dataset.form;
+  if (f === 'tema') enviarTema();
+  if (f === 'resp') enviarResp();
+});
+
+render();
+</script>
+</body>
+</html>
